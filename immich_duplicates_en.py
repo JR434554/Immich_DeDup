@@ -19,14 +19,16 @@ HEIC files (Apple originals), otherwise according to size, and finally EXIF meta
 
 Configuration can be provided via environment variables:
   IMMICH_SERVER, IMMICH_API_KEY, IMMICH_ENABLE_LOG, IMMICH_DRY_RUN, IMMICH_DEFINITELY,
-  IMMICH_ONLY_PAIRS, IMMICH_KEEP_METADATA, IMMICH_TRANSFER_METADATA, IMMICH_CONFIRM,
-  IMMICH_REQUEST_TIMEOUT, IMMICH_DELETE_BATCH_SIZE
+  IMMICH_ONLY_PAIRS, IMMICH_HEIC_ONLY, IMMICH_FILENAME_MATCH, IMMICH_KEEP_METADATA,
+  IMMICH_TRANSFER_METADATA, IMMICH_CONFIRM, IMMICH_REQUEST_TIMEOUT,
+  IMMICH_DELETE_BATCH_SIZE
 
 Improvements welcome! Feel free to share with attribution.
 """
 
 
 import os
+import re
 import requests
 import json
 from datetime import datetime
@@ -55,6 +57,8 @@ API_KEY = os.environ.get('IMMICH_API_KEY', 'ENTER_YOUR_API_KEY_HERE')
 DRY_RUN = get_env_bool('IMMICH_DRY_RUN', True)
 DEFINITELY = get_env_bool('IMMICH_DEFINITELY', False)
 ONLY_PAIRS = get_env_bool('IMMICH_ONLY_PAIRS', False)
+HEIC_ONLY = get_env_bool('IMMICH_HEIC_ONLY', False)
+FILENAME_MATCH = get_env_bool('IMMICH_FILENAME_MATCH', False)
 KEEP_METADATA = get_env_bool('IMMICH_KEEP_METADATA', True)
 TRANSFER_METADATA = get_env_bool('IMMICH_TRANSFER_METADATA', True)
 CONFIRM = get_env_bool('IMMICH_CONFIRM', False)
@@ -109,6 +113,35 @@ def get_asset_info(asset):
     size = exif.get('fileSizeInByte')
     exif_count = sum(1 for v in exif.values() if v is not None and (not isinstance(v, str) or v.strip() != ""))
     return (date, is_heic, size, exif_count)
+
+
+def _filename_indicates_heic(filename: str) -> bool:
+    name = (filename or "").lower()
+    if name.endswith('.heic'):
+        return True
+    stem = os.path.splitext(name)[0]
+    return stem.endswith('_hevc')
+
+
+def _normalize_base_name(filename: str) -> str:
+    base = os.path.splitext((filename or "").lower())[0]
+    base = re.sub(r'_hevc$', '', base)
+    base = re.sub(r'_edited(?:[-_]\d+)?$', '', base)
+    while True:
+        new_base = re.sub(r'[-_]\d+$', '', base)
+        if new_base == base:
+            break
+        base = new_base
+    return base
+
+
+def _group_matches_heic_requirement(assets):
+    return any(_filename_indicates_heic(a.get('originalFileName')) for a in assets)
+
+
+def _group_has_matching_bases(assets):
+    normalized = {_normalize_base_name(a.get('originalFileName')) for a in assets}
+    return len(normalized) == 1
 
 def select_best_asset(assets):
     remaining = assets[:]
@@ -310,6 +343,12 @@ for group in duplicates:
     assets = group.get('assets')
     if ONLY_PAIRS and len(assets) != 2:
         print(f"[SKIPPED] Duplicates n°{i} ({len(assets)} files) - only pairs mode, manual selection recommended")
+        continue
+    if HEIC_ONLY and not _group_matches_heic_requirement(assets):
+        print(f"[SKIPPED] Duplicates n°{i} ({len(assets)} files) - requires at least one HEIC/_HEVC file")
+        continue
+    if FILENAME_MATCH and not _group_has_matching_bases(assets):
+        print(f"[SKIPPED] Duplicates n°{i} ({len(assets)} files) - filenames do not match base pattern")
         continue
     kept, reason = select_best_asset(assets)
     to_delete_assets = [a for a in assets if a['id'] != kept['id']]

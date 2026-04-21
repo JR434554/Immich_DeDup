@@ -81,6 +81,8 @@ A full-access API key includes all of these. If you only use `IMMICH_TRANSFER_ME
    - `IMMICH_DEFINITELY` – `false` for recycle bin (default), `true` for permanent deletion
    - `IMMICH_ENABLE_LOG` – `true` or `false` for log file creation
    - `IMMICH_ONLY_PAIRS` – `false` (default) to process all groups, `true` to process only groups with exactly 2 files
+   - `IMMICH_HEIC_ONLY` – `false` (default); when `true`, only duplicate groups with at least one `.heic` file (or `_HEVC` variant) are processed
+   - `IMMICH_FILENAME_MATCH` – `false` (default); when `true`, only groups whose normalized base filenames all match are processed (e.g., `IMG_0127.JPG` with `IMG_0127-1.JPG`)
    - `IMMICH_KEEP_METADATA` – `true` (default) to let the kept image keep its metadata, `false` to remove it before transfer
    - `IMMICH_TRANSFER_METADATA` – `true` (default) to transfer albums, tags, location from deleted assets to the kept one
    - `IMMICH_CONFIRM` – `true` to ask [Y/n] before each duplicate group; `false` (default) to add all to bulk list
@@ -190,6 +192,8 @@ Une clé API avec accès complet inclut tous ces droits. Si vous utilisez unique
    - `IMMICH_DEFINITELY` – `false` pour la corbeille (par défaut), `true` pour suppression définitive
    - `IMMICH_ENABLE_LOG` – `true` ou `false` pour la création du fichier log
    - `IMMICH_ONLY_PAIRS` – `false` (défaut) pour traiter tous les groupes, `true` pour n'accepter que les paires de 2 fichiers
+   - `IMMICH_HEIC_ONLY` – `false` (défaut) ; `true` pour ne traiter que les groupes contenant au moins un fichier `.heic` ou suffixé `_HEVC`
+   - `IMMICH_FILENAME_MATCH` – `false` (défaut) ; `true` pour ne traiter que les groupes dont les noms de base normalisés correspondent tous (ex. `IMG_0127.JPG` avec `IMG_0127-1.JPG`)
    - `IMMICH_KEEP_METADATA` – `true` (défaut) pour que le gardé conserve ses métadonnées, `false` pour les retirer avant transfert
    - `IMMICH_TRANSFER_METADATA` – `true` (défaut) pour transférer albums, tags et localisation des supprimés vers le gardé
    - `IMMICH_CONFIRM` – `true` pour demander [O/n] avant chaque groupe ; `false` (défaut) pour tout ajouter à la liste en bloc
