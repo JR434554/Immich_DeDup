@@ -124,11 +124,30 @@ def _filename_indicates_heic(filename: str) -> bool:
 
 
 def _normalize_base_name(filename: str) -> str:
-    base = os.path.splitext((filename or "").lower())[0]
+    base = os.path.splitext((filename or "").lower())[0].strip()
     base = re.sub(r'_hevc$', '', base)
     base = re.sub(r'_edited(?:[-_]\d+)?$', '', base)
+    # Remove duplicated inner extensions like ".jpg (2)"
+    base = re.sub(r'\.(jpg|jpeg|png|gif|bmp|heic|heif|dng|mov|mp4)(?=\s*\()', '', base)
+
+    suffix_patterns = [
+        r'\s*\(\d+\)$',
+        r'\s*\((?:copy|copie|edited)\)$',
+        r'\s*-\s*(?:copy|copie)$',
+    ]
+
+    changed = True
+    while changed:
+        changed = False
+        for pattern in suffix_patterns:
+            new_base = re.sub(pattern, '', base).strip()
+            if new_base != base:
+                base = new_base
+                changed = True
+                break
+
     while True:
-        new_base = re.sub(r'[-_]\d+$', '', base)
+        new_base = re.sub(r'-\d+$', '', base)
         if new_base == base:
             break
         base = new_base
